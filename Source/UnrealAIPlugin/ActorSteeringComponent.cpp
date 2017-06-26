@@ -84,15 +84,10 @@ FVector UActorSteeringComponent::Pursuit(const AActor* TargetActor)
 	AActor* Owner = GetOwner();
 	FVector TargetActorLocation = TargetActor->GetActorLocation();
 	FVector TargetActorVelocity = TargetActor->GetVelocity();
+
 	FVector ToTargetActor = TargetActorLocation - Owner->GetActorLocation();
-	float RelativeHeading = Owner->GetActorForwardVector() | TargetActor->GetActorForwardVector();
-
-	if (((ToTargetActor | Owner->GetActorForwardVector()) > 0) && (RelativeHeading < ForwardHeadingTolerance))
-	{
-		return Seek(TargetActorLocation);
-	}
-
-	float LookAheadTime = (ToTargetActor.Size() / (mpMovementComponent->GetMaxSpeed() + TargetActorVelocity.Size())) / LookAheadTimeModifier;
+	
+	float LookAheadTime = (ToTargetActor.Size() / mpMovementComponent->GetMaxSpeed() + TargetActorVelocity.Size()) / LookAheadTimeModifier;
 	return Seek(TargetActorLocation + TargetActorVelocity * LookAheadTime);
 }
 
@@ -107,7 +102,7 @@ FVector UActorSteeringComponent::Evade(const AActor* TargetActor, float TriggerD
 	if (TriggerDistance < 0 || ToTargetActor.SizeSquared() <= TriggerDistance * TriggerDistance)
 	{
 		float LookAheadTime = (ToTargetActor.Size() / mpMovementComponent->GetMaxSpeed() + TargetActorVelocity.Size()) / LookAheadTimeModifier;
-		return Seek(TargetActorLocation + TargetActorVelocity * LookAheadTime);
+		return Flee(TargetActorLocation + TargetActorVelocity * LookAheadTime);
 	}
 
 	return FVector(0, 0, 0);
@@ -116,7 +111,7 @@ FVector UActorSteeringComponent::Evade(const AActor* TargetActor, float TriggerD
 FVector UActorSteeringComponent::Wander(float DeltaTime)
 {
 	float Jitter = WanderJitter * DeltaTime;
-	mWanderTarget += FVector(RandomClamped() * Jitter, RandomClamped() * Jitter, RandomClamped());
+	mWanderTarget += FVector(RandomClamped() * Jitter, RandomClamped() * Jitter, 0);
 	mWanderTarget.Normalize();
 	mWanderTarget *= WanderRadius;
 	FVector Target = mWanderTarget + FVector(WanderDistance, 0, 0);
