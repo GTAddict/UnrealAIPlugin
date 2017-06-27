@@ -38,6 +38,42 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
 	float WanderDistance;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool SeekEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool ArriveEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool FleeEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool WanderEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool PursuitEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool EvadeEnabled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float SeekWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float ArriveWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float FleeWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float WanderWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float PursuitWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float EvadeWeight;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
