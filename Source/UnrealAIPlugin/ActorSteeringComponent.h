@@ -20,23 +20,26 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float DecelerationCoefficient;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float ForwardHeadingTolerance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float LookAheadTimeModifier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float WanderJitter;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float WanderRadius;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Steering")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float WanderDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
+	float WanderMaxSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	bool SeekEnabled;
@@ -78,29 +81,34 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Seek(const FVector& Target);
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Flee(const FVector& Target, float TriggerDistance = -1.0f);
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Arrive(const FVector& Target);
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Pursuit(const AActor* TargetActor);
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Evade(const AActor* TargetActor, float TriggerDistance = -1.0f);
 
-	UFUNCTION(BlueprintCallable, Category = "Character Steering")
+	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Wander(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable, Category = "Obstacle Avoidance")
+	void CheckCollisions();
 
 	float RandomClamped();
 
 private:
 
-	class UCharacterMovementComponent* mpMovementComponent;
-	FVector mWanderTarget;
+	class UCharacterMovementComponent*	mpMovementComponent;
+	class UBoxComponent*				mpDetectionBoxComponent;
+
+	FVector								mWanderTarget;
 	
 };

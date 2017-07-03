@@ -3,6 +3,8 @@
 #include "ActorSteeringComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/BoxComponent.h"
+#include "EngineGlobals.h"
 
 // Sets default values for this component's properties
 UActorSteeringComponent::UActorSteeringComponent()
@@ -10,18 +12,14 @@ UActorSteeringComponent::UActorSteeringComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
-
 
 // Called when the game starts
 void UActorSteeringComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	mpMovementComponent = GetOwner()->FindComponentByClass<UCharacterMovementComponent>();
-
+	mpMovementComponent		= GetOwner()->FindComponentByClass<UCharacterMovementComponent>();
 }
 
 
@@ -29,8 +27,7 @@ void UActorSteeringComponent::BeginPlay()
 void UActorSteeringComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
+	CheckCollisions();
 }
 
 FVector UActorSteeringComponent::Seek(const FVector& Target)
@@ -116,7 +113,15 @@ FVector UActorSteeringComponent::Wander(float DeltaTime)
 	mWanderTarget *= WanderRadius;
 	FVector Target = mWanderTarget + FVector(WanderDistance, 0, 0);
 	Target = GetOwner()->GetTransform().TransformPosition(Target);
-	return Target - GetOwner()->GetActorLocation();
+	FVector ToPos = Target - GetOwner()->GetActorLocation();
+	ToPos.Normalize();
+	FVector DesiredVelocity = ToPos * WanderMaxSpeed;
+	return DesiredVelocity - GetOwner()->GetVelocity();
+}
+
+void UActorSteeringComponent::CheckCollisions()
+{
+	
 }
 
 float UActorSteeringComponent::RandomClamped()
