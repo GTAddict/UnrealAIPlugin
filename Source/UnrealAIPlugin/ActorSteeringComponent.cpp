@@ -4,7 +4,9 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "EngineGlobals.h"
+#include <Runtime/Engine/Classes/Engine/Engine.h>
 
 // Sets default values for this component's properties
 UActorSteeringComponent::UActorSteeringComponent()
@@ -20,6 +22,7 @@ void UActorSteeringComponent::BeginPlay()
 	Super::BeginPlay();
 
 	mpMovementComponent		= GetOwner()->FindComponentByClass<UCharacterMovementComponent>();
+	mpCapsuleComponent		= GetOwner()->FindComponentByClass<UCapsuleComponent>();
 }
 
 
@@ -27,7 +30,6 @@ void UActorSteeringComponent::BeginPlay()
 void UActorSteeringComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	CheckCollisions();
 }
 
 FVector UActorSteeringComponent::Seek(const FVector& Target)
@@ -119,9 +121,35 @@ FVector UActorSteeringComponent::Wander(float DeltaTime)
 	return DesiredVelocity - GetOwner()->GetVelocity();
 }
 
-void UActorSteeringComponent::CheckCollisions()
+FVector UActorSteeringComponent::ObstacleAvoidance()
 {
+	static int i = 0;
+	i++;
+	AActor* pOwner = GetOwner();
+	FHitResult Hit;
 	
+	float CollisionLookahead			= CollisionLookAhead;
+	const FVector StartLocation			= mpCapsuleComponent->GetComponentLocation();
+	const FVector EndLocation			= StartLocation + pOwner->GetActorForwardVector() * CollisionLookahead;
+	const ECollisionChannel Channel		= mpCapsuleComponent->GetCollisionObjectType();
+
+	FCollisionQueryParams QueryParams(NAME_None, false, pOwner);
+	FCollisionResponseParams ResponseParam;
+	mpCapsuleComponent->InitSweepCollisionParams(QueryParams, ResponseParam);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, Channel, QueryParams, ResponseParam);
+	if (bHit)
+	{
+		FVector PenetratedAlongHit = Hit.ImpactPoint - EndLocation;
+		FVector PenetratedAlongNormal = PenetratedAlongHit.ProjectOnToNormal(Hit.ImpactNormal);
+
+		// Hit.PenetrationDepth will always be 0 because it's a SingleLineTrace, not Multi
+		float PenetrationDepth = PenetratedAlongNormal.Size();
+		// Consider: Zero out Z-component before returning?
+		return (Hit.ImpactNormal * PenetrationDepth);
+	}
+
+	return FVector(0, 0, 0);
 }
 
 float UActorSteeringComponent::RandomClamped()

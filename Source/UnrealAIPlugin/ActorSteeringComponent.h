@@ -41,6 +41,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Steering")
 	float WanderMaxSpeed;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Obstacle Avoidance")
+	float CollisionLookAhead;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	bool SeekEnabled;
 
@@ -59,6 +62,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	bool EvadeEnabled;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	bool ObstacleAvoidanceEnabled;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
 	float SeekWeight;
 
@@ -76,6 +82,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
 	float EvadeWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+	float ObstacleAvoidanceWeight;
 
 public:	
 	// Called every frame
@@ -100,14 +109,14 @@ public:
 	FVector Wander(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable, Category = "Obstacle Avoidance")
-	void CheckCollisions();
+	FVector ObstacleAvoidance();
 
 	float RandomClamped();
 
 private:
 
 	class UCharacterMovementComponent*	mpMovementComponent;
-	class UBoxComponent*				mpDetectionBoxComponent;
+	class UCapsuleComponent*			mpCapsuleComponent;
 
 	FVector								mWanderTarget;
 	
