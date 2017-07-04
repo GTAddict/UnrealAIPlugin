@@ -152,6 +152,19 @@ FVector UActorSteeringComponent::ObstacleAvoidance()
 	return FVector(0, 0, 0);
 }
 
+FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVector& Target)
+{
+	FVector ToObstacle = Obstacle->GetActorLocation() - Target;
+	ToObstacle.Normalize();
+
+	FVector CheckFromPoint = Obstacle->GetActorLocation() + ToObstacle * SafeRaycastDistanceFromObstacle;
+	FVector OutPoint;
+	UPrimitiveComponent* OutComponent;
+	Obstacle->ActorGetDistanceToCollision(CheckFromPoint, ECC_WorldStatic, OutPoint, &OutComponent);
+
+	return OutPoint + ToObstacle * DistanceFromObstacle;
+}
+
 float UActorSteeringComponent::RandomClamped()
 {
 	return FMath::FRand() - FMath::FRand();

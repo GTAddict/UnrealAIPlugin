@@ -44,6 +44,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Obstacle Avoidance")
 	float CollisionLookAhead;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
+	float DistanceFromObstacle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
+	float SafeRaycastDistanceFromObstacle;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	bool SeekEnabled;
 
@@ -110,6 +116,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Obstacle Avoidance")
 	FVector ObstacleAvoidance();
+
+	UFUNCTION(BlueprintCallable, Category = "Hiding")
+	FVector GetHidingSpot(const AActor* Obstacle, const FVector& Target);
 
 	float RandomClamped();
 
