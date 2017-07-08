@@ -45,10 +45,16 @@ protected:
 	float CollisionLookAhead;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
-	float DistanceFromObstacle;
+	float DistanceFromCover;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
-	float SafeRaycastDistanceFromObstacle;
+	float SafeRaycastDistanceFromCover;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
+	float CoverSearchRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hiding")
+	FName CoverTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	bool SeekEnabled;
@@ -120,6 +126,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hiding")
 	FVector GetHidingSpot(const AActor* Obstacle, const FVector& Target);
 
+	UFUNCTION(BlueprintCallable, Category = "Hiding")
+	FVector Hide(const AActor* Target);
+
+	bool IsHiddenBy(const AActor* Actor);
+
 	float RandomClamped();
 
 private:
@@ -128,5 +139,4 @@ private:
 	class UCapsuleComponent*			mpCapsuleComponent;
 
 	FVector								mWanderTarget;
-	
 };

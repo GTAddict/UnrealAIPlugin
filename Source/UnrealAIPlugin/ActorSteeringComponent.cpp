@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "EngineGlobals.h"
 #include <Runtime/Engine/Classes/Engine/Engine.h>
+#include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UActorSteeringComponent::UActorSteeringComponent()
@@ -123,8 +124,6 @@ FVector UActorSteeringComponent::Wander(float DeltaTime)
 
 FVector UActorSteeringComponent::ObstacleAvoidance()
 {
-	static int i = 0;
-	i++;
 	AActor* pOwner = GetOwner();
 	FHitResult Hit;
 	
@@ -157,12 +156,71 @@ FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVe
 	FVector ToObstacle = Obstacle->GetActorLocation() - Target;
 	ToObstacle.Normalize();
 
-	FVector CheckFromPoint = Obstacle->GetActorLocation() + ToObstacle * SafeRaycastDistanceFromObstacle;
+	FVector CheckFromPoint = Obstacle->GetActorLocation() + ToObstacle * SafeRaycastDistanceFromCover;
 	FVector OutPoint;
 	UPrimitiveComponent* OutComponent;
 	Obstacle->ActorGetDistanceToCollision(CheckFromPoint, ECC_WorldStatic, OutPoint, &OutComponent);
 
-	return OutPoint + ToObstacle * DistanceFromObstacle;
+	return OutPoint + ToObstacle * DistanceFromCover;
+}
+
+FVector UActorSteeringComponent::Hide(const AActor* Target)
+{
+	AActor* pOwner = GetOwner();
+
+	static EObjectTypeQuery Query = UEngineTypes::ConvertToObjectType(ECC_WorldStatic);
+	static ETraceTypeQuery TQuery = UEngineTypes::ConvertToTraceType(ECC_WorldStatic);
+
+	TArray<AActor*> ActorsToIgnore = { pOwner };
+	TArray<FHitResult> OutHits;
+
+	if (UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		pOwner->GetActorLocation(),
+		pOwner->GetActorLocation(),
+		CoverSearchRadius,
+		TQuery,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForOneFrame,
+		OutHits,
+		true))
+	{
+		// Find closest object
+		FHitResult ClosestHit;
+		ClosestHit.Distance = CoverSearchRadius;
+		for (auto Hit : OutHits)
+		{
+			// Make sure object is not under me or over me
+			if (Hit.GetActor()->ActorHasTag(CoverTag) && Hit.Distance < ClosestHit.Distance && IsHiddenBy(Hit.GetActor()))
+			{
+				ClosestHit = Hit;
+			}
+		}
+
+		if (ClosestHit.GetActor())
+		{
+			return Arrive(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()));
+		}
+	}
+
+	return Evade(Target);
+}
+
+// Make sure that the cover object is not under the capsule, and also make sure
+// that the lowest point of the cover object is under atleast the midpoint of capsule
+bool UActorSteeringComponent::IsHiddenBy(const AActor* Actor)
+{
+	FVector Origin, Extent;
+	Actor->GetActorBounds(true, Origin, Extent);
+
+	float ActorHighestZ = Origin.Z + Extent.Z;
+	float CapsuleLowestZ = mpCapsuleComponent->GetComponentLocation().Z - mpCapsuleComponent->GetScaledCapsuleHalfHeight();
+
+	float ActorLowestZ = Origin.Z - Extent.Z;
+	float CapsuleOrigin = mpCapsuleComponent->GetComponentLocation().Z;
+
+	return CapsuleLowestZ < ActorHighestZ && ActorLowestZ < CapsuleOrigin;
 }
 
 float UActorSteeringComponent::RandomClamped()
