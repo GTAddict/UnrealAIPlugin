@@ -200,7 +200,10 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 
 		if (ClosestHit.GetActor())
 		{
-			return Arrive(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()));
+			// Seek works better than Arrive here, and also it's probably better
+			// since one won't "arrive" to a hiding spot - you'll probably run
+			// full velocity there
+			return Seek(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()));
 		}
 	}
 
