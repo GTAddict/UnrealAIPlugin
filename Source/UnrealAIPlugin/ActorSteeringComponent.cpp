@@ -164,6 +164,11 @@ FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVe
 	return OutPoint + ToObstacle * DistanceFromCover;
 }
 
+// TODO: Perhaps we shouldn't find the closest obstacle and then find the
+// hiding spot? Perhaps we should calculate all the hiding spots and seek
+// to the nearest one? i.e., the nearest obstacle might not have the nearest
+// hiding spot. However that might be expensive? Maybe limit it to 5 closest
+// obstacles?
 FVector UActorSteeringComponent::Hide(const AActor* Target)
 {
 	AActor* pOwner = GetOwner();
