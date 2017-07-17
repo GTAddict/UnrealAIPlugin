@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "AI/Navigation/NavigationTypes.h"
 #include "ActorSteeringComponent.generated.h"
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALAIPLUGIN_API UActorSteeringComponent : public UActorComponent
@@ -98,9 +98,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
 	float ObstacleAvoidanceWeight;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
+	float TetherDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
+	float PathPointProximityTolerance;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Navigation")
+	FVector UpdateNavigation();
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Seek(const FVector& Target);
@@ -129,7 +138,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hiding")
 	FVector Hide(const AActor* Target);
 
-	bool IsHiddenBy(const AActor* Actor);
+	UFUNCTION(BlueprintCallable, Category = "Follow")
+	void FollowActor(AActor* Target);
+
+	UFUNCTION(BlueprintCallable, Category = "Follow")
+	void StopFollowActor();
+
+	bool IsHiddenBy(const AActor* Actor) const;
 
 	float RandomClamped();
 
@@ -139,4 +154,7 @@ private:
 	class UCapsuleComponent*			mpCapsuleComponent;
 
 	FVector								mWanderTarget;
+	AActor*								mFollowActor;
+
+	FNavPathSharedPtr					mNavPath;
 };

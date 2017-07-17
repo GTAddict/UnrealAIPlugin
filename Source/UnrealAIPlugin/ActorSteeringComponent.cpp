@@ -3,11 +3,12 @@
 #include "ActorSteeringComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "EngineGlobals.h"
 #include <Runtime/Engine/Classes/Engine/Engine.h>
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
+#include "AI/Navigation/NavigationSystem.h"
+#include "AI/Navigation/NavigationPath.h"
 
 // Sets default values for this component's properties
 UActorSteeringComponent::UActorSteeringComponent()
@@ -31,6 +32,31 @@ void UActorSteeringComponent::BeginPlay()
 void UActorSteeringComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+FVector UActorSteeringComponent::UpdateNavigation() 
+{
+	if (mNavPath->IsValid() && mNavPath->GetPathPoints().Num() > 0)
+	{
+		auto& PathPoints = mNavPath->GetPathPoints();
+
+		FVector Location = PathPoints[0].Location;
+		
+		if (FVector2D(GetOwner()->GetActorLocation()).Equals(FVector2D(Location), PathPointProximityTolerance))
+		{
+			PathPoints.RemoveAt(0);
+		}
+		else if (PathPoints.Last().Location == Location)
+		{
+			return Arrive(Location);
+		}
+		else
+		{
+			return Seek(Location);
+		}
+	}
+
+	return FVector();
 }
 
 FVector UActorSteeringComponent::Seek(const FVector& Target)
@@ -215,9 +241,25 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 	return Evade(Target);
 }
 
+void UActorSteeringComponent::FollowActor(AActor* Target)
+{
+	AActor* pOwner = GetOwner();
+	UNavigationPath* Path = GetWorld()->GetNavigationSystem()->FindPathToActorSynchronously(GetWorld(), pOwner->GetActorLocation(), Target, TetherDistance);
+	Path->GetPath()->SetSourceActor(*pOwner);
+	mNavPath = Path->GetPath();
+}
+
+void UActorSteeringComponent::StopFollowActor()
+{
+	if (mNavPath->IsValid())
+	{
+		mNavPath->DisableGoalActorObservation();
+	}
+}
+
 // Make sure that the cover object is not under the capsule, and also make sure
 // that the lowest point of the cover object is under atleast the midpoint of capsule
-bool UActorSteeringComponent::IsHiddenBy(const AActor* Actor)
+bool UActorSteeringComponent::IsHiddenBy(const AActor* Actor) const
 {
 	FVector Origin, Extent;
 	Actor->GetActorBounds(true, Origin, Extent);
