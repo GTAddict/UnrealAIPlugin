@@ -104,6 +104,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
 	float PathPointProximityTolerance;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
+	float PathFindInterval;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -111,29 +114,32 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Navigation")
 	FVector UpdateNavigation();
 
-	UFUNCTION(BlueprintCallable, Category = "Steering")
-	FVector Seek(const FVector& Target);
+	UFUNCTION(BlueprintCallable, Category = "Navigation")
+	bool FindPath(const FVector& Target, TArray<FVector>& OutPath) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
-	FVector Flee(const FVector& Target, float TriggerDistance = -1.0f);
+	FVector Seek(const FVector& Target) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
-	FVector Arrive(const FVector& Target);
+	FVector Flee(const FVector& Target, float TriggerDistance = -1.0f) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
-	FVector Pursuit(const AActor* TargetActor);
+	FVector Arrive(const FVector& Target) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
-	FVector Evade(const AActor* TargetActor, float TriggerDistance = -1.0f);
+	FVector Pursuit(const AActor* TargetActor) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Steering")
+	FVector Evade(const AActor* TargetActor, float TriggerDistance = -1.0f) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Steering")
 	FVector Wander(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable, Category = "Obstacle Avoidance")
-	FVector ObstacleAvoidance();
+	FVector ObstacleAvoidance() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Hiding")
-	FVector GetHidingSpot(const AActor* Obstacle, const FVector& Target);
+	FVector GetHidingSpot(const AActor* Obstacle, const FVector& Target) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Hiding")
 	FVector Hide(const AActor* Target);
@@ -144,17 +150,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Follow")
 	void StopFollowActor();
 
-	bool IsHiddenBy(const AActor* Actor) const;
-
-	float RandomClamped();
+	UFUNCTION(BlueprintCallable, Category = "Pathfinding")
+	bool DoesStraightPathExist(const FVector& Target) const;
 
 private:
+
+	static float RandomClamped();
+
+	bool IsHiddenBy(const AActor* Actor) const;
 
 	class UCharacterMovementComponent*	mpMovementComponent;
 	class UCapsuleComponent*			mpCapsuleComponent;
 
 	FVector								mWanderTarget;
-	AActor*								mFollowActor;
+	AActor*								mpFollowActor;
+	FVector								mFollowActorPrevLocation;
+	TArray<FVector>						mCurrentPath;
 
-	FNavPathSharedPtr					mNavPath;
+	UCharacterMovementComponent*		mpFollowActorMovementComponent;
+
+	mutable float						mLastPathFind;
+
+	// FNavPathSharedPtr					mNavPath;
 };

@@ -36,17 +36,32 @@ void UActorSteeringComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 FVector UActorSteeringComponent::UpdateNavigation() 
 {
-	if (mNavPath->IsValid() && mNavPath->GetPathPoints().Num() > 0)
+	if (mpFollowActor)
 	{
-		auto& PathPoints = mNavPath->GetPathPoints();
+		FVector FollowActorCurrentLocation = mpFollowActor->GetActorLocation();
+		if (FollowActorCurrentLocation != mFollowActorPrevLocation)
+		{
+			if (FindPath(FollowActorCurrentLocation, mCurrentPath))
+			{
+				mFollowActorPrevLocation = FollowActorCurrentLocation;
+			}
+		}
+	}
 
-		FVector Location = PathPoints[0].Location;
+	if (mCurrentPath.Num() > 0)
+	{
+		FVector Location = mCurrentPath[0];
 		
 		if (FVector2D(GetOwner()->GetActorLocation()).Equals(FVector2D(Location), PathPointProximityTolerance))
 		{
-			PathPoints.RemoveAt(0);
+			mCurrentPath.RemoveAt(0);
+			if (mCurrentPath.Num() > 0)
+			{
+				Location = mCurrentPath[0];
+			}
 		}
-		else if (PathPoints.Last().Location == Location)
+		
+		if (mCurrentPath.Num() == 1)
 		{
 			return Arrive(Location);
 		}
@@ -59,7 +74,44 @@ FVector UActorSteeringComponent::UpdateNavigation()
 	return FVector();
 }
 
-FVector UActorSteeringComponent::Seek(const FVector& Target)
+#pragma optimize("", off)
+bool UActorSteeringComponent::FindPath(const FVector& Target, TArray<FVector>& OutPath) const
+{
+	if (DoesStraightPathExist(Target))
+	{
+		OutPath = { Target };
+		return true;
+	}
+	else
+	{
+		float GameTime = GetWorld()->GetTimeSeconds();
+		if (GameTime - mLastPathFind >= PathFindInterval)
+		{
+			mLastPathFind = GameTime;
+			UNavigationPath* Path = GetWorld()->GetNavigationSystem()->FindPathToLocationSynchronously(GetWorld(), GetOwner()->GetActorLocation(), Target);
+			if (Path && Path->IsValid() && Path->GetPath()->IsValid())
+			{
+				TArray<FNavPathPoint>& PathPoints = Path->GetPath()->GetPathPoints();
+				OutPath.Empty(PathPoints.Num());
+
+				for (auto& Point : PathPoints)
+				{
+					OutPath.Push(Point.Location);
+				}
+			}
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+}
+#pragma optimize("", on)
+
+FVector UActorSteeringComponent::Seek(const FVector& Target) const
 {
 	AActor* Owner = GetOwner();
 
@@ -70,7 +122,7 @@ FVector UActorSteeringComponent::Seek(const FVector& Target)
 	return DesiredVelocity - Owner->GetVelocity();
 }
 
-FVector UActorSteeringComponent::Flee(const FVector& Target, float TriggerDistance)
+FVector UActorSteeringComponent::Flee(const FVector& Target, float TriggerDistance) const
 {
 	AActor* Owner = GetOwner();
 
@@ -86,7 +138,7 @@ FVector UActorSteeringComponent::Flee(const FVector& Target, float TriggerDistan
 	return FVector(0, 0, 0);
 }
 
-FVector UActorSteeringComponent::Arrive(const FVector& Target)
+FVector UActorSteeringComponent::Arrive(const FVector& Target) const
 {
 	AActor* Owner = GetOwner();
 
@@ -105,7 +157,7 @@ FVector UActorSteeringComponent::Arrive(const FVector& Target)
 	return FVector(0, 0, 0);
 }
 
-FVector UActorSteeringComponent::Pursuit(const AActor* TargetActor)
+FVector UActorSteeringComponent::Pursuit(const AActor* TargetActor) const
 {
 	AActor* Owner = GetOwner();
 	FVector TargetActorLocation = TargetActor->GetActorLocation();
@@ -117,7 +169,7 @@ FVector UActorSteeringComponent::Pursuit(const AActor* TargetActor)
 	return Seek(TargetActorLocation + TargetActorVelocity * LookAheadTime);
 }
 
-FVector UActorSteeringComponent::Evade(const AActor* TargetActor, float TriggerDistance)
+FVector UActorSteeringComponent::Evade(const AActor* TargetActor, float TriggerDistance) const
 {
 	AActor* Owner = GetOwner();
 	FVector TargetActorLocation = TargetActor->GetActorLocation();
@@ -148,7 +200,7 @@ FVector UActorSteeringComponent::Wander(float DeltaTime)
 	return DesiredVelocity - GetOwner()->GetVelocity();
 }
 
-FVector UActorSteeringComponent::ObstacleAvoidance()
+FVector UActorSteeringComponent::ObstacleAvoidance() const
 {
 	AActor* pOwner = GetOwner();
 	FHitResult Hit;
@@ -177,7 +229,7 @@ FVector UActorSteeringComponent::ObstacleAvoidance()
 	return FVector(0, 0, 0);
 }
 
-FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVector& Target)
+FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVector& Target) const
 {
 	FVector ToObstacle = Obstacle->GetActorLocation() - Target;
 	ToObstacle.Normalize();
@@ -199,7 +251,6 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 {
 	AActor* pOwner = GetOwner();
 
-	static EObjectTypeQuery Query = UEngineTypes::ConvertToObjectType(ECC_WorldStatic);
 	static ETraceTypeQuery TQuery = UEngineTypes::ConvertToTraceType(ECC_WorldStatic);
 
 	TArray<AActor*> ActorsToIgnore = { pOwner };
@@ -243,18 +294,42 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 
 void UActorSteeringComponent::FollowActor(AActor* Target)
 {
-	AActor* pOwner = GetOwner();
-	UNavigationPath* Path = GetWorld()->GetNavigationSystem()->FindPathToActorSynchronously(GetWorld(), pOwner->GetActorLocation(), Target, TetherDistance);
-	Path->GetPath()->SetSourceActor(*pOwner);
-	mNavPath = Path->GetPath();
+	mpFollowActor = Target;
 }
 
 void UActorSteeringComponent::StopFollowActor()
 {
-	if (mNavPath->IsValid())
+	mpFollowActor = nullptr;
+}
+
+bool UActorSteeringComponent::DoesStraightPathExist(const FVector& Target) const
+{
+	FVector StartPosition	= GetOwner()->GetActorLocation();
+	FVector EndPosition		= FVector(Target.X, Target.Y, StartPosition.Z);	// Check for a path parallel to XY-plane - no jumping or falling
+
+	AActor* pOwner = GetOwner();
+	FHitResult OutHit;
+	static TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes =
 	{
-		mNavPath->DisableGoalActorObservation();
-	}
+		UEngineTypes::ConvertToObjectType(ECC_WorldStatic),
+		UEngineTypes::ConvertToObjectType(ECC_WorldDynamic),
+		UEngineTypes::ConvertToObjectType(ECC_PhysicsBody)
+	};
+
+
+	return !UKismetSystemLibrary::CapsuleTraceSingleForObjects(
+		GetWorld(),
+		StartPosition,
+		EndPosition,
+		mpCapsuleComponent->GetScaledCapsuleRadius(),
+		mpCapsuleComponent->GetScaledCapsuleHalfHeight(),
+		ObjectTypes,
+		true,
+		{ pOwner },
+		EDrawDebugTrace::None,
+		OutHit,
+		true
+	);
 }
 
 // Make sure that the cover object is not under the capsule, and also make sure
