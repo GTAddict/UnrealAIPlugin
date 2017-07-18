@@ -4,7 +4,6 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "EngineGlobals.h"
 #include <Runtime/Engine/Classes/Engine/Engine.h>
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 #include "AI/Navigation/NavigationSystem.h"
@@ -247,7 +246,7 @@ FVector UActorSteeringComponent::GetHidingSpot(const AActor* Obstacle, const FVe
 // to the nearest one? i.e., the nearest obstacle might not have the nearest
 // hiding spot. However that might be expensive? Maybe limit it to 5 closest
 // obstacles?
-FVector UActorSteeringComponent::Hide(const AActor* Target)
+bool UActorSteeringComponent::Hide(const AActor* Target)
 {
 	AActor* pOwner = GetOwner();
 
@@ -283,11 +282,11 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 		if (ClosestHit.GetActor())
 		{
 			FindPath(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()), mCurrentPath);
-			return FVector();
+			return true;
 		}
 	}
 
-	return Evade(Target);
+	return false;
 }
 
 void UActorSteeringComponent::FollowActor(AActor* Target)

@@ -142,7 +142,7 @@ public:
 	FVector GetHidingSpot(const AActor* Obstacle, const FVector& Target) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Hiding")
-	FVector Hide(const AActor* Target);
+	bool Hide(const AActor* Target);
 
 	UFUNCTION(BlueprintCallable, Category = "Follow")
 	void FollowActor(AActor* Target);
