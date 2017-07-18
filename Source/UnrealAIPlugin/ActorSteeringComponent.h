@@ -170,6 +170,4 @@ private:
 	UCharacterMovementComponent*		mpFollowActorMovementComponent;
 
 	mutable float						mLastPathFind;
-
-	// FNavPathSharedPtr					mNavPath;
 };
