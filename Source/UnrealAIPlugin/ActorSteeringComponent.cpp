@@ -52,7 +52,7 @@ FVector UActorSteeringComponent::UpdateNavigation()
 	{
 		FVector Location = mCurrentPath[0];
 		
-		if (FVector2D(GetOwner()->GetActorLocation()).Equals(FVector2D(Location), PathPointProximityTolerance))
+		if (FVector2D(GetOwner()->GetActorLocation()).Equals(FVector2D(Location), mpCapsuleComponent->GetScaledCapsuleRadius()))
 		{
 			mCurrentPath.RemoveAt(0);
 			if (mCurrentPath.Num() > 0)
@@ -117,7 +117,7 @@ FVector UActorSteeringComponent::Seek(const FVector& Target) const
 
 	FVector ToTarget = Target - Owner->GetActorLocation();
 	ToTarget.Normalize();
-	FVector DesiredVelocity = ToTarget *mpMovementComponent->GetMaxSpeed();
+	FVector DesiredVelocity = ToTarget * mpMovementComponent->GetMaxSpeed();
 
 	return DesiredVelocity - Owner->GetVelocity();
 }
@@ -282,10 +282,8 @@ FVector UActorSteeringComponent::Hide(const AActor* Target)
 
 		if (ClosestHit.GetActor())
 		{
-			// Seek works better than Arrive here, and also it's probably better
-			// since one won't "arrive" to a hiding spot - you'll probably run
-			// full velocity there
-			return Seek(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()));
+			FindPath(GetHidingSpot(ClosestHit.GetActor(), Target->GetActorLocation()), mCurrentPath);
+			return FVector();
 		}
 	}
 
@@ -308,6 +306,10 @@ bool UActorSteeringComponent::DoesStraightPathExist(const FVector& Target) const
 	FVector EndPosition		= FVector(Target.X, Target.Y, StartPosition.Z);	// Check for a path parallel to XY-plane - no jumping or falling
 
 	AActor* pOwner = GetOwner();
+	FVector BoundsOrigin;
+	FVector BoundsExtent;
+	pOwner->GetActorBounds(false, BoundsOrigin, BoundsExtent);
+
 	FHitResult OutHit;
 	static TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes =
 	{
@@ -316,13 +318,12 @@ bool UActorSteeringComponent::DoesStraightPathExist(const FVector& Target) const
 		UEngineTypes::ConvertToObjectType(ECC_PhysicsBody)
 	};
 
-
-	return !UKismetSystemLibrary::CapsuleTraceSingleForObjects(
+	return !UKismetSystemLibrary::BoxTraceSingleForObjects(
 		GetWorld(),
 		StartPosition,
 		EndPosition,
-		mpCapsuleComponent->GetScaledCapsuleRadius(),
-		mpCapsuleComponent->GetScaledCapsuleHalfHeight(),
+		BoundsExtent,
+		pOwner->GetActorRotation(),
 		ObjectTypes,
 		true,
 		{ pOwner },
