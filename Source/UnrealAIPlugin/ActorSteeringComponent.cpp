@@ -73,7 +73,6 @@ FVector UActorSteeringComponent::UpdateNavigation()
 	return FVector();
 }
 
-#pragma optimize("", off)
 bool UActorSteeringComponent::FindPath(const FVector& Target, TArray<FVector>& OutPath) const
 {
 	if (DoesStraightPathExist(Target))
@@ -108,7 +107,6 @@ bool UActorSteeringComponent::FindPath(const FVector& Target, TArray<FVector>& O
 	}
 
 }
-#pragma optimize("", on)
 
 FVector UActorSteeringComponent::Seek(const FVector& Target) const
 {
